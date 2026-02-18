@@ -1,0 +1,60 @@
+Actúa como un desarrollador Senior Full-Stack y Arquitecto de Bases de Datos.
+
+Necesito desarrollar la Versión 1.0 de mi aplicación web progresiva (PWA) Mobile-First. La app es para gestionar mis ventas en ruta de trapos industriales a talleres a pie de calle.
+
+Stack Tecnológico:
+
+Frontend: Next.js (App Router), React, Tailwind CSS.
+
+Backend/Base de Datos: Supabase (PostgreSQL).
+
+Deployment: Vercel.
+
+Mapas e Iconos: react-leaflet y lucide-react.
+
+Modelo de Datos Robusto (Supabase):
+Necesito separar los datos fijos del historial y usar una Vista SQL para evitar desnormalizar la base de datos.
+
+Tabla clientes: id (UUID), nombre (TEXT), tipo_negocio (Enum: Mecánico, Torno, Rectificadora, Hojalatería, Otro), celular (TEXT, importante para incluir el prefijo +52), precio_sugerido (DECIMAL(10,2)), latitud (DECIMAL(10,8)), longitud (DECIMAL(10,8)), activo (BOOLEAN, default true).
+
+Tabla visitas: id (UUID), cliente_id (FK), resultado (Enum: Venta, No_Venta, Abono), tipo_trapo (Enum: Blanco, Color, Industrial, Estopa, N/A), precio_kilo_aplicado (DECIMAL(10,2), nullable), kilos_vendidos (DECIMAL(10,2), nullable), monto_total (DECIMAL(10,2), nullable), monto_pagado (DECIMAL(10,2), nullable), fecha (TIMESTAMP, default now).
+
+Vista SQL vista_metricas_clientes: Una view que cruce clientes y visitas para calcular dinámicamente: total_kilos_comprados, deuda_pendiente (sumatoria de monto_total - monto_pagado), ultima_fecha_compra y dias_desde_ultima_compra.
+
+Pantallas Requeridas (Interfaz optimizada para usar con una mano bajo el sol):
+
+Pantalla 1: Inicio / Captura Rápida (GPS)
+
+Solicita geolocalización vía API del navegador y muestra la lista de clientes ordenados por distancia desde mi ubicación actual.
+
+Botón "Registrar Venta": Abre un modal/drawer. Selecciono tipo_trapo. Pre-llena precio_kilo_aplicado con el precio_sugerido del cliente (editable). Ingreso kilos_vendidos. Calcula automáticamente monto_total. Me permite ingresar monto_pagado (por si me quedan a deber). Guarda en visitas.
+
+Botón "No compró": Guarda un registro en visitas solo con el resultado "No_Venta" y la fecha.
+
+Botón Flotante (FAB) para crear cliente nuevo. Captura GPS oculto y pide Nombre, Celular, Tipo y Precio Sugerido.
+
+Pantalla 2: Directorio y CRM (Gestión de WhatsApp)
+
+Vista de lista alimentada por la vista_metricas_clientes.
+
+Filtros superiores: Por tipo_negocio y ordenamiento por dias_desde_ultima_compra o deuda_pendiente.
+
+Checkbox en cada cliente. Al seleccionar uno o varios, aparece un FAB: "Enviar WhatsApp".
+
+Genera enlaces dinámicos (https://wa.me/[celular]?text=Hola...). Si son varios, debe procesar la lista iterando y abriendo pestañas nuevas.
+
+Pantalla 3: Mapa de Exploración (Leaflet)
+
+Mapa centrado por defecto en coordenadas de la zona urbana (ej. [25.7460, -100.2801]) antes de que cargue el GPS del dispositivo.
+
+Coloca pines usando la latitud/longitud de los clientes. Si la vista indica que los dias_desde_ultima_compra son > 15, el pin debe ser rojo; si no, verde.
+
+Al tocar un pin: Popup con el nombre, deuda, hace cuántos días compró y botón rápido para "Registrar Visita".
+
+Instrucciones de Código Esperadas:
+
+Entrégame primero el Script SQL completo para ejecutar en Supabase (Tablas, Enums, Llaves foráneas y la creación de la VIEW).
+
+Estructura de navegación global (Bottom Navigation Bar nativa de móvil).
+
+Código de los componentes principales enfocándote en una UI limpia con Tailwind.
