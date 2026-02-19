@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Home, Users, Map } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Home, Users, Map, LogOut } from 'lucide-react';
 import { clsx } from 'clsx';
+import { supabase } from '@/lib/supabase';
 
 const navItems = [
   { href: '/', icon: Home, label: 'Inicio' },
@@ -13,10 +14,16 @@ const navItems = [
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+  };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pb-safe-bottom z-50">
-      <div className="grid grid-cols-3 h-16">
+      <div className="grid grid-cols-4 h-16">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -39,6 +46,13 @@ export default function BottomNav() {
             </Link>
           );
         })}
+        <button
+          onClick={handleLogout}
+          className="flex flex-col items-center justify-center gap-1 text-gray-500 active:text-red-400 transition-colors"
+        >
+          <LogOut className="w-6 h-6" />
+          <span className="text-xs">Salir</span>
+        </button>
       </div>
     </nav>
   );

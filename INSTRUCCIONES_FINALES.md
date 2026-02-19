@@ -1,4 +1,4 @@
-# 🚀 Pasos Siguientes para Completar la Configuración
+e# 🚀 Pasos Siguientes para Completar la Configuración
 
 ## ✅ Lo que ya está hecho:
 

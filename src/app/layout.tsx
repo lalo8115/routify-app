@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import BottomNav from '@/components/BottomNav';
 
@@ -6,19 +6,20 @@ export const metadata: Metadata = {
   title: 'TrapoApp - Gestión de Ventas',
   description: 'Aplicación para gestión de ventas en ruta de trapos industriales',
   manifest: '/manifest.json',
-  themeColor: '#0ea5e9',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-    viewportFit: 'cover',
-  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
     title: 'TrapoApp',
   },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+  themeColor: '#0ea5e9',
 };
 
 export default function RootLayout({
@@ -29,6 +30,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <head>
+        <meta name="mobile-web-app-capable" content="yes" />
         <link
           rel="stylesheet"
           href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
