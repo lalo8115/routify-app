@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Users, Map, LogOut } from 'lucide-react';
+import { Home, Users, Map, LogOut, Settings } from 'lucide-react';
 import { clsx } from 'clsx';
 import { supabase } from '@/lib/supabase';
 
@@ -10,6 +10,7 @@ const navItems = [
   { href: '/', icon: Home, label: 'Inicio' },
   { href: '/directorio', icon: Users, label: 'Directorio' },
   { href: '/mapa', icon: Map, label: 'Mapa' },
+  { href: '/configuracion', icon: Settings, label: 'SaaS' },
 ];
 
 export default function BottomNav() {
@@ -23,7 +24,7 @@ export default function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pb-safe-bottom z-50">
-      <div className="grid grid-cols-4 h-16">
+      <div className="grid grid-cols-5 h-16">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;

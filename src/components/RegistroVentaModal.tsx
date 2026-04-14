@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { X } from 'lucide-react';
-import { Cliente, TipoTrapo } from '@/types';
+import { useState, useEffect } from 'react';
+import { X, PlusCircle } from 'lucide-react';
+import { Cliente } from '@/types';
 import { supabase } from '@/lib/supabase';
 import { formatearMoneda } from '@/lib/utils';
 
@@ -12,29 +12,78 @@ interface RegistroVentaModalProps {
   onVentaRegistrada: () => void;
 }
 
-const tiposTrapo: TipoTrapo[] = ['Blanco', 'Color', 'Industrial', 'Estopa'];
+type Producto = {
+  id: string;
+  nombre: string;
+  unidad_medida: string;
+  precio_base: number;
+};
 
 export default function RegistroVentaModal({
   cliente,
   onClose,
   onVentaRegistrada,
 }: RegistroVentaModalProps) {
-  const [tipoTrapo, setTipoTrapo] = useState<TipoTrapo>('Industrial');
-  const [precioKilo, setPrecioKilo] = useState(cliente.precio_sugerido.toString());
-  const [kilos, setKilos] = useState('');
+  const [productos, setProductos] = useState<Producto[]>([]);
+  const [productoId, setProductoId] = useState<string>('');
+  const [precioUnitario, setPrecioUnitario] = useState(cliente.precio_sugerido.toString());
+  const [cantidad, setCantidad] = useState('');
   const [montoPagado, setMontoPagado] = useState('');
   const [procesando, setProcesando] = useState(false);
+  const [cargandoProductos, setCargandoProductos] = useState(true);
 
-  const kilosNum = parseFloat(kilos) || 0;
-  const precioNum = parseFloat(precioKilo) || 0;
-  const montoTotal = kilosNum * precioNum;
+  // Obtener productos disponibles
+  useEffect(() => {
+    const fetchProductos = async () => {
+      setCargandoProductos(true);
+      const { data } = await supabase
+        .from('productos')
+        .select('id, nombre, unidad_medida, precio_base')
+        .eq('activo', true)
+        .order('nombre');
+      
+      if (data && data.length > 0) {
+        setProductos(data);
+        setProductoId(data[0].id);
+        if (data[0].precio_base > 0) {
+          setPrecioUnitario(data[0].precio_base.toString());
+        }
+      }
+      setCargandoProductos(false);
+    };
+    fetchProductos();
+  }, []);
+
+  // Actualizar precio si eligen otro producto que tenga precio base
+  useEffect(() => {
+    const prod = productos.find((p) => p.id === productoId);
+    if (prod && prod.precio_base > 0) {
+      setPrecioUnitario(prod.precio_base.toString());
+    } else {
+      setPrecioUnitario(cliente.precio_sugerido.toString());
+    }
+  }, [productoId, productos, cliente.precio_sugerido]);
+
+  const cantNum = parseFloat(cantidad) || 0;
+  const precioNum = parseFloat(precioUnitario) || 0;
+  const montoTotal = cantNum * precioNum;
   const montoPagadoNum = parseFloat(montoPagado) || 0;
+
+  const getUnidadMedida = () => {
+    const p = productos.find(x => x.id === productoId);
+    return p ? p.unidad_medida : 'unidades';
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (kilosNum <= 0) {
-      alert('Ingresa una cantidad de kilos válida');
+    if (cantNum <= 0) {
+      alert(`Ingresa una cantidad mayor a cero`);
+      return;
+    }
+    
+    if (!productoId) {
+      alert('Debes seleccionar un producto del catálogo SaaS');
       return;
     }
 
@@ -43,9 +92,10 @@ export default function RegistroVentaModal({
       const { error } = await supabase.from('visitas').insert({
         cliente_id: cliente.id,
         resultado: 'Venta',
-        tipo_trapo: tipoTrapo,
-        precio_kilo_aplicado: precioNum,
-        kilos_vendidos: kilosNum,
+        tipo_trapo: 'N/A', // Retrocompatibilidad v1
+        producto_id: productoId, // NUEVO CRM Dinámico
+        precio_unitario: precioNum, // Nuevo campo
+        cantidad: cantNum, // Nuevo campo
         monto_total: montoTotal,
         monto_pagado: montoPagadoNum,
       });
@@ -56,7 +106,7 @@ export default function RegistroVentaModal({
       onVentaRegistrada();
     } catch (error: any) {
       console.error('Error al registrar venta:', error);
-      alert('Error al registrar la venta: ' + error.message);
+      alert('Error: ' + error.message);
     } finally {
       setProcesando(false);
     }
@@ -80,65 +130,77 @@ export default function RegistroVentaModal({
         <p className="text-gray-600 mb-6">{cliente.nombre}</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Tipo de trapo */}
+          {/* Producto Dinámico */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tipo de trapo
+              Producto a Vender
             </label>
-            <div className="grid grid-cols-2 gap-2">
-              {tiposTrapo.map((tipo) => (
-                <button
-                  key={tipo}
-                  type="button"
-                  onClick={() => setTipoTrapo(tipo)}
-                  className={`px-4 py-3 rounded-lg font-medium transition-colors ${
-                    tipoTrapo === tipo
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-gray-100 text-gray-700 active:bg-gray-200'
-                  }`}
-                >
-                  {tipo}
-                </button>
-              ))}
+            {cargandoProductos ? (
+              <p className="text-sm text-gray-500">Cargando catálogo...</p>
+            ) : productos.length === 0 ? (
+              <div className="bg-orange-50 p-4 rounded-lg flex gap-3 text-orange-800 text-sm">
+                <PlusCircle className="w-5 h-5 flex-shrink-0" />
+                <p>No tienes productos en tu CRM. Ve a "SaaS Config." para crear tu catálogo de ventas.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {productos.map((prod) => (
+                  <button
+                    key={prod.id}
+                    type="button"
+                    onClick={() => setProductoId(prod.id)}
+                    className={`px-4 py-3 rounded-lg font-medium transition-colors border ${
+                      productoId === prod.id
+                        ? 'bg-primary-600 text-white border-primary-600 shadow-md'
+                        : 'bg-white text-gray-700 border-gray-200 active:bg-gray-100'
+                    }`}
+                  >
+                    <span className="block text-sm">{prod.nombre}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Precio y Cantidad en Fila */}
+          <div className="flex gap-4 w-full">
+            {/* Cantidad de unidades */}
+            <div className="w-1/2">
+              <label htmlFor="cantidad" className="block text-sm font-medium text-gray-700 mb-2">
+                Cantidad ({getUnidadMedida()})
+              </label>
+              <input
+                id="cantidad"
+                type="number"
+                step="0.5"
+                value={cantidad}
+                onChange={(e) => setCantidad(e.target.value)}
+                className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                placeholder="Ej. 10"
+                required
+              />
+            </div>
+            
+            {/* Precio Unitario */}
+            <div className="w-1/2">
+              <label htmlFor="precio" className="block text-sm font-medium text-gray-700 mb-2">
+                Precio c/{getUnidadMedida()}
+              </label>
+              <input
+                id="precio"
+                type="number"
+                step="0.01"
+                value={precioUnitario}
+                onChange={(e) => setPrecioUnitario(e.target.value)}
+                className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                required
+              />
             </div>
           </div>
 
-          {/* Precio por kilo */}
-          <div>
-            <label htmlFor="precio" className="block text-sm font-medium text-gray-700 mb-2">
-              Precio por kilo
-            </label>
-            <input
-              id="precio"
-              type="number"
-              step="0.01"
-              value={precioKilo}
-              onChange={(e) => setPrecioKilo(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              required
-            />
-          </div>
-
-          {/* Kilos vendidos */}
-          <div>
-            <label htmlFor="kilos" className="block text-sm font-medium text-gray-700 mb-2">
-              Kilos vendidos
-            </label>
-            <input
-              id="kilos"
-              type="number"
-              step="0.5"
-              value={kilos}
-              onChange={(e) => setKilos(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="0.0"
-              required
-            />
-          </div>
-
           {/* Monto total (calculado) */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600">Monto total</p>
+          <div className="bg-gray-50 p-4 rounded-lg flex justify-between items-center mt-2">
+            <p className="text-sm text-gray-600">Total a cobrar</p>
             <p className="text-2xl font-bold text-gray-900">
               {formatearMoneda(montoTotal)}
             </p>
@@ -147,7 +209,7 @@ export default function RegistroVentaModal({
           {/* Monto pagado */}
           <div>
             <label htmlFor="pagado" className="block text-sm font-medium text-gray-700 mb-2">
-              Monto pagado (opcional)
+              ¿Cuánto te pagó? (opcional)
             </label>
             <input
               id="pagado"
@@ -155,7 +217,7 @@ export default function RegistroVentaModal({
               step="0.01"
               value={montoPagado}
               onChange={(e) => setMontoPagado(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               placeholder={formatearMoneda(montoTotal)}
             />
           </div>
@@ -163,7 +225,7 @@ export default function RegistroVentaModal({
           {/* Deuda pendiente */}
           {montoPagadoNum < montoTotal && montoPagadoNum > 0 && (
             <div className="bg-red-50 p-4 rounded-lg">
-              <p className="text-sm text-red-600">Quedará a deber</p>
+              <p className="text-sm text-red-600">Quedará a deber (Deuda)</p>
               <p className="text-xl font-bold text-red-700">
                 {formatearMoneda(montoTotal - montoPagadoNum)}
               </p>
@@ -173,10 +235,10 @@ export default function RegistroVentaModal({
           {/* Botón de envío */}
           <button
             type="submit"
-            disabled={procesando}
-            className="w-full py-4 bg-primary-600 text-white rounded-lg font-bold text-lg active:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={procesando || productos.length === 0}
+            className="w-full py-4 bg-primary-600 text-white rounded-lg font-bold text-lg active:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-4"
           >
-            {procesando ? 'Registrando...' : 'Registrar Venta'}
+            {procesando ? 'Guardando Venta...' : 'Cobrar e Imprimir'}
           </button>
         </form>
       </div>
