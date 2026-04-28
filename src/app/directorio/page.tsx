@@ -36,7 +36,7 @@ export default function DirectorioPage() {
         .eq('activo', true);
 
       if (error) throw error;
-      setClientes(data || []);
+      setClientes((data as MetricasCliente[]) || []);
     } catch (error) {
       console.error('Error al cargar clientes:', error);
       alert('Error al cargar los clientes');

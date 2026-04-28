@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+import { databaseSource, supabase } from "@/lib/database";
+import { getLocalSessionFromDocument } from "@/lib/local-session";
 import BottomNav from "@/components/BottomNav";
 
 type Categoria = {
@@ -21,6 +22,7 @@ type Producto = {
 };
 
 export default function ConfiguracionSaaS() {
+  const isLocalMode = databaseSource === 'local';
   const [isAdmin, setIsAdmin] = useState(false);
   const [verificandoAdmin, setVerificandoAdmin] = useState(true);
   const [tab, setTab] = useState<"categorias" | "productos">("categorias");
@@ -46,6 +48,19 @@ export default function ConfiguracionSaaS() {
   const verificarPermisosYDatos = async () => {
     setVerificandoAdmin(true);
     try {
+      if (isLocalMode) {
+        const localSession = getLocalSessionFromDocument();
+
+        if (!localSession || localSession.rol !== 'admin') {
+          setIsAdmin(false);
+          return;
+        }
+
+        setIsAdmin(true);
+        await cargarDatos();
+        return;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -66,7 +81,7 @@ export default function ConfiguracionSaaS() {
       }
       
       // Validamos explícitamente el rol administrador
-      if (usuarioNegocio && usuarioNegocio.rol === 'admin') {
+      if (usuarioNegocio && (usuarioNegocio as any).rol === 'admin') {
         setIsAdmin(true);
         await cargarDatos();
       } else {
@@ -91,7 +106,7 @@ export default function ConfiguracionSaaS() {
       .from("categorias_cliente")
       .select("*")
       .order("created_at", { ascending: false });
-    if (data) setCategorias(data);
+    if (data) setCategorias(data as any);
   };
 
   const cargarProductos = async () => {
@@ -99,7 +114,7 @@ export default function ConfiguracionSaaS() {
       .from("productos")
       .select("*")
       .order("created_at", { ascending: false });
-    if (data) setProductos(data);
+    if (data) setProductos(data as any);
   };
 
   const crearCategoria = async (e: React.FormEvent) => {

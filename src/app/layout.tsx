@@ -39,8 +39,8 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <div className="flex flex-col h-screen">
-          <main className="flex-1 overflow-hidden pb-16">
+        <div className="flex flex-col h-[100dvh] w-full overflow-hidden">
+          <main className="flex-1 overflow-hidden relative pb-[env(safe-area-inset-bottom,4rem)] md:pb-16 h-full flex flex-col">
             {children}
           </main>
           <BottomNav />

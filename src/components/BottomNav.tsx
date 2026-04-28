@@ -2,24 +2,37 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Users, Map, LogOut, Settings } from 'lucide-react';
+import { Home, Users, Map, LogOut, Settings, Clock } from 'lucide-react';
 import { clsx } from 'clsx';
-import { supabase } from '@/lib/supabase';
+import { databaseSource, supabase } from '@/lib/database';
+import { clearLocalSession } from '@/lib/local-session';
 
 const navItems = [
   { href: '/', icon: Home, label: 'Inicio' },
-  { href: '/directorio', icon: Users, label: 'Directorio' },
-  { href: '/mapa', icon: Map, label: 'Mapa' },
+  { href: '/directorio', icon: Users, label: 'Dir.' },
+  { href: '/historial', icon: Clock, label: 'Historial' },
   { href: '/configuracion', icon: Settings, label: 'SaaS' },
 ];
 
 export default function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const isLocalMode = databaseSource === 'local';
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push('/login');
+    try {
+      if (isLocalMode) {
+        clearLocalSession();
+        router.push('/login');
+        return;
+      }
+
+      await supabase.auth.signOut();
+      router.push('/login');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      router.push('/login');
+    }
   };
 
   return (

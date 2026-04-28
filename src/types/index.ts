@@ -45,6 +45,11 @@ export interface MetricasCliente {
   deuda_pendiente: number;
   ultima_fecha_compra: string | null;
   dias_desde_ultima_compra: number | null;
+  // Nuevos campos proyectados
+  frecuencia_compra_dias?: number; 
+  proxima_fecha_visita_estimada?: string | null;
+  ultima_cantidad?: number;
+  ultimo_monto?: number;
 }
 
 // Interfaces para la UI

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { databaseSource, supabase } from '@/lib/database';
+import { LOCAL_LOGIN_PASSWORD, setLocalSession } from '@/lib/local-session';
 
 type Step = 'login' | 'selectNegocio';
 
@@ -13,6 +14,7 @@ interface Negocio {
 
 export default function LoginPage() {
   const router = useRouter();
+  const isLocalMode = databaseSource === 'local';
   const [step, setStep] = useState<Step>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,6 +26,10 @@ export default function LoginPage() {
 
   // Manejar tokens de autenticación en la URL (enlaces de recuperación, magic links, etc.)
   useEffect(() => {
+    if (isLocalMode) {
+      return;
+    }
+
     const checkAuthToken = async () => {
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const accessToken = hashParams.get('access_token');
@@ -79,7 +85,7 @@ export default function LoginPage() {
     };
 
     checkAuthToken();
-  }, [router]);
+  }, [router, isLocalMode]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,6 +93,40 @@ export default function LoginPage() {
     setError('');
 
     try {
+      if (isLocalMode) {
+        if (password !== LOCAL_LOGIN_PASSWORD) {
+          throw new Error('Correo o contraseña incorrectos. Verifica tus credenciales.');
+        }
+
+        const { data: usuarios, error: usuarioError } = await supabase
+          .from('usuarios_negocio')
+          .select('id, user_id, negocio_id, nombre, email, rol, activo')
+          .eq('email', email)
+          .eq('activo', true);
+
+        if (usuarioError) {
+          throw usuarioError;
+        }
+
+        const usuario = usuarios?.[0];
+
+        if (!usuario) {
+          throw new Error('No encontramos un usuario activo con ese correo.');
+        }
+
+        setLocalSession({
+          userId: String(usuario.user_id ?? usuario.id),
+          email: String(usuario.email),
+          nombre: String(usuario.nombre ?? email),
+          rol: String(usuario.rol ?? 'vendedor'),
+          negocioId: String(usuario.negocio_id),
+        });
+
+        router.push('/');
+        router.refresh();
+        return;
+      }
+
       console.log('🔐 Iniciando autenticación...');
       
       // 1. Autenticar con Supabase Auth

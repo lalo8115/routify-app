@@ -1,0 +1,1 @@
+\ir ../seed_demo.sql
