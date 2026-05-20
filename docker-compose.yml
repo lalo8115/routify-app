@@ -84,6 +84,7 @@ services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.49.1
     restart: unless-stopped
+    privileged: true # <-- DARLE PERMISOS ROOT (Necesario en WSL2)
     ports:
       - "8080:8080"
     volumes:
@@ -92,6 +93,8 @@ services:
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
+      - /cgroup:/cgroup:ro # <-- ESPACIO CGROUPS CLASICO
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro # <-- CGROUPS V2 (Moderno)
     devices:
       - /dev/kmsg:/dev/kmsg
     command:

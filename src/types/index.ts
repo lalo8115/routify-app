@@ -4,12 +4,12 @@ export type TipoNegocio = 'Mecánico' | 'Torno' | 'Rectificadora' | 'Hojalaterí
 
 export type ResultadoVisita = 'Venta' | 'No_Venta' | 'Abono';
 
-export type TipoTrapo = 'Blanco' | 'Color' | 'Industrial' | 'Estopa' | 'N/A';
-
 export interface Cliente {
   id: string;
   nombre: string;
-  tipo_negocio: TipoNegocio;
+  tipo_negocio?: TipoNegocio;
+  categoria_id?: string;
+  categoria_nombre?: string;
   celular: string;
   precio_sugerido: number;
   latitud: number;
@@ -23,9 +23,9 @@ export interface Visita {
   id: string;
   cliente_id: string;
   resultado: ResultadoVisita;
-  tipo_trapo: TipoTrapo;
+  producto_id?: string | null;
   precio_kilo_aplicado: number | null;
-  kilos_vendidos: number | null;
+  cantidad: number | null;
   monto_total: number | null;
   monto_pagado: number | null;
   fecha: string;
@@ -35,7 +35,9 @@ export interface Visita {
 export interface MetricasCliente {
   id: string;
   nombre: string;
-  tipo_negocio: TipoNegocio;
+  tipo_negocio?: TipoNegocio;
+  categoria_id?: string;
+  categoria_nombre?: string;
   celular: string;
   precio_sugerido: number;
   latitud: number;
@@ -65,7 +67,7 @@ export interface Coordenadas {
 
 export interface NuevoClienteFormData {
   nombre: string;
-  tipo_negocio: TipoNegocio;
+  categoria_id?: string;
   celular: string;
   precio_sugerido: number;
   latitud: number;
@@ -74,8 +76,8 @@ export interface NuevoClienteFormData {
 
 export interface RegistroVentaFormData {
   cliente_id: string;
-  tipo_trapo: TipoTrapo;
+  producto_id?: string;
   precio_kilo_aplicado: number;
-  kilos_vendidos: number;
+  cantidad: number;
   monto_pagado: number;
 }

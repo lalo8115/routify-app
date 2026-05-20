@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
@@ -227,7 +227,7 @@ export default function MapView({
             <div>
               <h3 className="text-xl font-bold text-gray-900">{clienteActivo.nombre}</h3>
               <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">
-                {clienteActivo.tipo_negocio}
+                {clienteActivo.categoria_nombre || 'Sin categoría'}
               </p>
             </div>
             <button
@@ -246,11 +246,11 @@ export default function MapView({
               <div className="flex items-center gap-2 mb-1">
                 <Calendar className="w-4 h-4 text-blue-600" />
                 <span className="text-xs font-semibold text-blue-800 uppercase tracking-wider">
-                  Última visita
+                  Ãšltima visita
                 </span>
               </div>
               <p className="text-base font-bold text-gray-900">
-                {clienteActivo.dias_desde_ultima_compra ?? 'Nuevo'} {clienteActivo.dias_desde_ultima_compra !== undefined && 'días'}
+                {clienteActivo.dias_desde_ultima_compra ?? 'Nuevo'} {clienteActivo.dias_desde_ultima_compra !== undefined && 'dÃ­as'}
               </p>
             </div>
             <div className="bg-red-50/50 rounded-xl p-3">

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
@@ -82,7 +82,7 @@ export default function MapaInicioUnificado() {
           type: 'cliente',
           id: `cliente-${cliente.id}`,
           title: cliente.nombre,
-          subtitle: `${cliente.tipo_negocio} • ${cliente.distancia !== undefined ? `${cliente.distancia.toFixed(2)} km` : 'sin distancia'}`,
+          subtitle: `${(cliente.categoria_nombre || '')} â€¢ ${cliente.distancia !== undefined ? `${cliente.distancia.toFixed(2)} km` : 'sin distancia'}`,
           cliente,
         }));
 
@@ -90,7 +90,7 @@ export default function MapaInicioUnificado() {
 
       if (query.length >= 3) {
         try {
-          // Crear un área de búsqueda (bounding box de ~100x100km) basada en la ubicación del usuario
+          // Crear un Ã¡rea de bÃºsqueda (bounding box de ~100x100km) basada en la ubicaciÃ³n del usuario
           const lat = ubicacionActual?.latitud || 25.6866;
           const lon = ubicacionActual?.longitud || -100.3161;
           const viewbox = `${lon - 0.5},${lat + 0.5},${lon + 0.5},${lat - 0.5}`;
@@ -146,7 +146,14 @@ export default function MapaInicioUnificado() {
     }
 
     const card = document.getElementById(`cliente-${selectedCliente.id}`);
-    card?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (card && listRef.current) {
+      const container = listRef.current;
+      const scrollTarget = card.offsetTop - container.offsetTop - (container.clientHeight / 2) + (card.clientHeight / 2);
+      container.scrollTo({
+        top: scrollTarget,
+        behavior: 'smooth'
+      });
+    }
   }, [selectedCliente]);
 
   const clientesFiltrados = useMemo(() => {
@@ -159,7 +166,7 @@ export default function MapaInicioUnificado() {
     return clientes.filter((cliente) => {
       return (
         cliente.nombre.toLowerCase().includes(query) ||
-        cliente.tipo_negocio.toLowerCase().includes(query)
+        (cliente.categoria_nombre || '').toLowerCase().includes(query)
       );
     });
   }, [clientes, searchQuery]);
@@ -176,7 +183,7 @@ export default function MapaInicioUnificado() {
           return ubicacion;
         },
         (geoError) => {
-          console.warn('Ubicación no disponible:', geoError);
+          console.warn('UbicaciÃ³n no disponible:', geoError);
           setUbicacionActual(null);
           setGeoStatus('error');
           return null;
@@ -207,7 +214,7 @@ export default function MapaInicioUnificado() {
         console.warn('No se pudieron cargar las visitas recientes:', visitasError);
       }
 
-      // Mapear la última visita por cliente
+      // Mapear la Ãºltima visita por cliente
       const ultimaVisitaMap = new Map<string, { cantidad: number, monto: number }>();
       (visitasData || []).forEach((visita: any) => {
         if (!ultimaVisitaMap.has(visita.cliente_id)) {
@@ -287,7 +294,7 @@ export default function MapaInicioUnificado() {
 
   const centerOnCurrentLocation = () => {
     if (!ubicacionActual) {
-      alert('Primero activa la ubicación en tu navegador.');
+      alert('Primero activa la ubicaciÃ³n en tu navegador.');
       return;
     }
 
@@ -347,7 +354,7 @@ export default function MapaInicioUnificado() {
               <input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar cliente o dirección"
+                placeholder="Buscar cliente o direcciÃ³n"
                 className="w-full bg-transparent text-sm text-white placeholder:text-slate-400 outline-none"
               />
               {searchQuery && (
@@ -361,8 +368,8 @@ export default function MapaInicioUnificado() {
                 {searching
                   ? 'Buscando...'
                   : geoStatus === 'ok'
-                    ? 'Ubicación activa'
-                    : 'Ubicación no disponible'}
+                    ? 'UbicaciÃ³n activa'
+                    : 'UbicaciÃ³n no disponible'}
               </span>
               <button
                 onClick={centerOnCurrentLocation}
@@ -396,14 +403,14 @@ export default function MapaInicioUnificado() {
         </div>
       </section>
 
-      <section className="relative flex-[2] min-h-0 border-t border-white/10 bg-slate-50 text-slate-900">
+      <section className="relative flex-[2] min-h-0 border-t border-white/10 bg-slate-50 text-slate-900 flex flex-col">
         <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3">
           <div>
-            <h1 className="text-lg font-black tracking-tight">Captura Rápida</h1>
+            <h1 className="text-lg font-black tracking-tight">Captura RÃ¡pida</h1>
             <p className="text-xs text-slate-500">
               {ubicacionActual
                 ? 'Clientes ordenados por distancia'
-                : 'Activa tu ubicación para ordenar por cercanía'}
+                : 'Activa tu ubicaciÃ³n para ordenar por cercanÃ­a'}
             </p>
           </div>
 
@@ -420,28 +427,28 @@ export default function MapaInicioUnificado() {
         </div>
 
         {selectedCliente && (
-          <div className="border-b border-slate-200 bg-primary-50 px-4 py-3">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-700">En foco</p>
-                <h2 className="text-base font-bold text-slate-900">{selectedCliente.nombre}</h2>
-                <p className="text-xs text-slate-600">{selectedCliente.tipo_negocio}</p>
+            <div className="border-b border-slate-200 px-3 py-2">
+              <div className="flex items-start justify-between gap-3">
+                <div className="truncate">
+                  <h2 className="text-sm font-bold text-slate-900 border-l-2 border-primary-600 pl-2">
+                    {selectedCliente.nombre}
+                  </h2>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedCliente(null);
+                    setFocusLocation(null);
+                    setSearchQuery('');
+                  }}
+                  className="flex-shrink-0 bg-gray-100 p-1.5 rounded-full text-slate-500 shadow-sm active:scale-95"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
               </div>
-              <button
-                onClick={() => {
-                  setSelectedCliente(null);
-                  setFocusLocation(null);
-                  setSearchQuery('');
-                }}
-                className="rounded-full bg-white p-2 text-slate-500 shadow-sm"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
           </div>
         )}
 
-        <div ref={listRef} className="h-full overflow-y-auto hide-scrollbar px-4 py-4">
+        <div ref={listRef} className="flex-1 overflow-y-auto hide-scrollbar px-4 py-4">
           {clientesFiltrados.length === 0 ? (
             <div className="flex h-full items-center justify-center p-6 text-center">
               <div>

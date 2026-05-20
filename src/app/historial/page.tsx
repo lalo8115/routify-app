@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ShoppingCart, XCircle, Banknote, Calendar, Clock, MapPin } from 'lucide-react';
+import { ShoppingCart, XCircle, Banknote, Calendar, Clock, MapPin, ArrowLeft } from 'lucide-react';
 import { formatearMoneda } from '@/lib/utils';
 import BottomNav from '@/components/BottomNav';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 interface VisitaHistory {
   id: string;
@@ -18,25 +19,39 @@ interface VisitaHistory {
   cliente: {
     nombre: string;
   };
+    producto?: {
+      nombre: string;
+      unidad_medida?: string;
+    };
 }
 
-export default function HistorialPage() {
+function HistorialContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const clienteId = searchParams.get('cliente_id');
+  
   const [visitas, setVisitas] = useState<VisitaHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState<string>('Todas');
 
   useEffect(() => {
     cargarHistorial();
-  }, []);
+  }, [clienteId]);
 
   const cargarHistorial = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('visitas')
-        .select('*, cliente:clientes(nombre)')
+        .select('*, cliente:clientes(nombre), producto:productos(nombre, unidad_medida)')
         .order('fecha', { ascending: false })
         .limit(100);
+
+      if (clienteId) {
+        query = query.eq('cliente_id', clienteId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       if (data) setVisitas(data as unknown as VisitaHistory[]);
@@ -80,12 +95,17 @@ export default function HistorialPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <div className="bg-white border-b sticky top-0 z-10">
-        <div className="p-4">
-          <h1 className="text-xl font-bold flex items-center gap-2 text-gray-800">
-            <Clock className="w-6 h-6 text-indigo-600" />
-            Historial de Actividad
-          </h1>
-        </div>
+          <div className="p-4 flex items-center gap-3">
+            {clienteId && (
+              <button onClick={() => router.back()} className="p-2 -ml-2 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors">
+                <ArrowLeft className="w-5 h-5 text-gray-600" />
+              </button>
+            )}
+            <h1 className="text-xl font-bold flex items-center gap-2 text-gray-800">
+              <Clock className="w-6 h-6 text-indigo-600" />
+              Historial {clienteId ? 'del Cliente' : 'de Actividad'}
+            </h1>
+          </div>
         
         {/* Filtros */}
         <div className="flex px-4 pb-3 gap-2 overflow-x-auto shrink-0 no-scrollbar">
@@ -142,7 +162,7 @@ export default function HistorialPage() {
                     </span>
                     {visita.cantidad && (
                       <span className="text-xs text-green-600 font-medium bg-green-100 px-2 py-0.5 rounded-full">
-                        {visita.cantidad} kg
+                          {visita.cantidad} {visita.producto?.unidad_medida ? visita.producto.unidad_medida : 'u.'}{visita.producto?.nombre ? ' de ' + visita.producto.nombre : ''}
                       </span>
                     )}
                   </div>
@@ -176,5 +196,13 @@ export default function HistorialPage() {
 
       <BottomNav />
     </div>
+  );
+}
+
+export default function HistorialPage() {
+  return (
+    <Suspense fallback={<div className="p-4 text-center">Cargando...</div>}>
+      <HistorialContent />
+    </Suspense>
   );
 }

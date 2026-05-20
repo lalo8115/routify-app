@@ -92,7 +92,6 @@ export default function RegistroVentaModal({
       const { error } = await supabase.from('visitas').insert({
         cliente_id: cliente.id,
         resultado: 'Venta',
-        tipo_trapo: 'N/A', // Retrocompatibilidad v1
         producto_id: productoId, // NUEVO CRM Dinámico
         precio_unitario: precioNum, // Nuevo campo
         cantidad: cantNum, // Nuevo campo

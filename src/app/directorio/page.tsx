@@ -1,14 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MessageCircle, Filter, ArrowUpDown } from 'lucide-react';
+import { MessageCircle, Filter, ArrowUpDown, History } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { MetricasCliente, TipoNegocio } from '@/types';
 import { formatearMoneda, formatearDias, generarEnlaceWhatsApp } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 type OrdenPor = 'nombre' | 'dias_desde_ultima_compra' | 'deuda_pendiente';
 
 export default function DirectorioPage() {
+  const router = useRouter();
   const [clientes, setClientes] = useState<MetricasCliente[]>([]);
   const [clientesFiltrados, setClientesFiltrados] = useState<MetricasCliente[]>([]);
   const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set());
@@ -50,7 +52,7 @@ export default function DirectorioPage() {
 
     // Aplicar filtro por tipo
     if (filtroTipo !== 'Todos') {
-      resultado = resultado.filter((c) => c.tipo_negocio === filtroTipo);
+      resultado = resultado.filter((c) => (c.categoria_nombre || 'Sin categoría') === filtroTipo);
     }
 
     // Aplicar ordenamiento
@@ -245,10 +247,25 @@ export default function DirectorioPage() {
 
                     {/* Información del cliente */}
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-base font-bold text-gray-900 truncate">
-                        {cliente.nombre}
-                      </h3>
-                      <p className="text-sm text-gray-600">{cliente.tipo_negocio}</p>
+                      <div className="flex justify-between items-start">
+                        <div className="truncate pr-2">
+                          <h3 className="text-base font-bold text-gray-900 truncate">
+                            {cliente.nombre}
+                          </h3>
+                          <p className="text-sm text-gray-600">{cliente.categoria_nombre || 'Sin categoría'}</p>
+                        </div>
+                        
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/historial?cliente_id=${cliente.id}`);
+                          }}
+                          className="flex-shrink-0 p-2 bg-indigo-50 text-indigo-600 rounded-full hover:bg-indigo-100 transition-colors shadow-sm active:scale-95"
+                          title="Ver historial de cliente"
+                        >
+                          <History className="w-5 h-5" />
+                        </button>
+                      </div>
 
                       <div className="grid grid-cols-3 gap-2 mt-3 text-center">
                         <div>
